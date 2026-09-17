@@ -1,0 +1,233 @@
+rules:
+
+  # ==========================================
+  # SECURITY RULES
+  # ==========================================
+
+  - id: SEC-01
+    name: No Hardcoded Secrets
+    category: Security
+    severity: High
+    description: Secrets such as passwords and API keys should not be hardcoded in source code.
+    check: hardcoded_secrets
+    remediation: Move passwords, API keys and other sensitive values to environment variables.
+
+  - id: SEC-02
+    name: Authentication and Authorization
+    category: Security
+    severity: High
+    description: Protected APIs should contain basic authentication or authorization checks.
+    check: authentication
+    remediation: Add appropriate authentication and authorization checks to protected routes.
+
+  - id: SEC-03
+    name: Input Validation
+    category: Security
+    severity: Medium
+    description: User input should be validated before processing.
+    check: input_validation
+    remediation: Validate and sanitize user input before processing it.
+
+  - id: SEC-04
+    name: Sensitive Logging
+    category: Security
+    severity: High
+    description: Sensitive values should not be written directly to application logs.
+    check: sensitive_logging
+    remediation: Remove passwords, API keys and other sensitive values from logging statements.
+
+  - id: SEC-05
+    name: Secure Configuration
+    category: Security
+    severity: Medium
+    description: Sensitive configuration should use environment variables or protected configuration.
+    check: secure_configuration
+    remediation: Store sensitive configuration values in environment variables or protected configuration files.
+
+
+  # ==========================================
+  # BACKUP AND RECOVERY RULES
+  # ==========================================
+
+  - id: BDR-01
+    name: Backup Documentation
+    category: Backup
+    severity: High
+    description: A backup process should be documented.
+    check: backup_documentation
+    remediation: Document how application data is backed up.
+
+  - id: BDR-02
+    name: Backup Frequency
+    category: Backup
+    severity: Medium
+    description: Backup frequency should be defined.
+    check: backup_frequency
+    remediation: Document how frequently backups are performed.
+
+  - id: BDR-03
+    name: Restore Documentation
+    category: Backup
+    severity: High
+    description: Restore steps should be documented.
+    check: restore_documentation
+    remediation: Document clear steps for restoring application data.
+
+  - id: BDR-04
+    name: Important Data Identification
+    category: Backup
+    severity: Medium
+    description: Important application data should be identified.
+    check: important_data
+    remediation: Document which application data must be protected.
+
+  - id: BDR-05
+    name: Recovery Procedure
+    category: Backup
+    severity: High
+    description: A basic recovery procedure should be available.
+    check: recovery_procedure
+    remediation: Document a basic application recovery procedure.
+
+
+  # ==========================================
+  # MONITORING AND LOGGING RULES
+  # ==========================================
+
+  - id: MON-01
+    name: Health Check Endpoint
+    category: Monitoring
+    severity: High
+    description: Application should provide a health check endpoint.
+    check: health_endpoint
+    remediation: Add a simple /health endpoint.
+
+  - id: MON-02
+    name: Application Logging
+    category: Monitoring
+    severity: Medium
+    description: Important application actions should use basic logging.
+    check: application_logging
+    remediation: Add logging for important application actions.
+
+  - id: MON-03
+    name: Error Logging
+    category: Monitoring
+    severity: Medium
+    description: Errors should be logged with useful messages.
+    check: error_logging
+    remediation: Add useful error logging around important application operations.
+
+  - id: MON-04
+    name: No Secrets in Logs
+    category: Monitoring
+    severity: High
+    description: Logs should not expose passwords or secret values.
+    check: secret_logs
+    remediation: Remove sensitive values from application logs.
+
+  - id: MON-05
+    name: Application Status
+    category: Monitoring
+    severity: Low
+    description: Basic application status information should be available.
+    check: application_status
+    remediation: Provide a basic application status or health endpoint.
+
+
+  # ==========================================
+  # PERFORMANCE RULES
+  # ==========================================
+
+  - id: SCA-01
+    name: Database Query Review
+    category: Performance
+    severity: Medium
+    description: Important database queries should be reasonably simple and avoid obvious repeated queries.
+    check: database_queries
+    remediation: Review database queries and avoid unnecessary repeated queries.
+
+  - id: SCA-02
+    name: Large Loop Review
+    category: Performance
+    severity: Low
+    description: Large loops or repeated file operations should be reviewed.
+    check: large_loops
+    remediation: Review large loops and repeated file operations for unnecessary work.
+
+  - id: SCA-03
+    name: Performance Testing
+    category: Performance
+    severity: Medium
+    description: Basic performance testing or response-time notes should be documented.
+    check: performance_testing
+    remediation: Document basic performance testing or expected response times.
+
+  - id: SCA-04
+    name: Caching Review
+    category: Performance
+    severity: Low
+    description: Simple caching may be used where repeated expensive operations are identified.
+    check: caching
+    remediation: Consider simple caching for repeated expensive operations.
+
+  - id: SCA-05
+    name: Resource Assumptions
+    category: Performance
+    severity: Low
+    description: Application resource assumptions should be documented where necessary.
+    check: resource_assumptions
+    remediation: Document important CPU, memory or storage assumptions.
+
+
+  # ==========================================
+  # OPERATIONS RULES
+  # ==========================================
+
+  - id: OPS-01
+    name: Installation Instructions
+    category: Operations
+    severity: Medium
+    description: README should contain local installation and run instructions.
+    check: installation_instructions
+    remediation: Add installation and application run instructions to README.
+
+  - id: OPS-02
+    name: Configuration Documentation
+    category: Operations
+    severity: Medium
+    description: Required configuration values should be documented.
+    check: configuration_documentation
+    remediation: Document required environment variables and configuration values.
+
+  - id: OPS-03
+    name: Rollback Procedure
+    category: Operations
+    severity: High
+    description: A rollback or previous-version recovery procedure should be documented.
+    check: rollback_procedure
+    remediation: Document how to return the application to a previous working version.
+
+  - id: OPS-04
+    name: Operational Health Check
+    category: Operations
+    severity: Medium
+    description: A health check should be available.
+    check: health_check
+    remediation: Provide an application health check endpoint.
+
+  - id: OPS-05
+    name: Failure Recovery Instructions
+    category: Operations
+    severity: Medium
+    description: Common failure and restart steps should be documented.
+    check: failure_recovery
+    remediation: Document common failures and application restart procedures.
+
+  - id: OPS-06
+    name: Application Ownership
+    category: Operations
+    severity: Low
+    description: Application ownership or responsible person should be documented.
+    check: ownership
+    remediation: Document the person or team responsible for the application.
