@@ -509,3 +509,195 @@ def get_dashboard_analytics():
     finally:
 
         connection.close()
+# ==========================================
+# FILE UPLOAD FUNCTIONS
+# ==========================================
+
+def save_uploaded_file(original_filename, mime_type, file_size, file_data):
+    """
+    Save an uploaded file into the uploaded_files table.
+    """
+
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+
+            sql = """
+                INSERT INTO uploaded_files
+                (
+                    original_filename,
+                    mime_type,
+                    file_size,
+                    file_data
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    %s,
+                    %s
+                )
+            """
+
+            cursor.execute(
+                sql,
+                (
+                    original_filename,
+                    mime_type,
+                    file_size,
+                    file_data
+                )
+            )
+
+            file_id = cursor.lastrowid
+
+        connection.commit()
+
+        return file_id
+
+    finally:
+        connection.close()
+
+
+def get_uploaded_files():
+    """
+    Get all uploaded files.
+    Does not load the actual file_data to keep the query lightweight.
+    """
+
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+
+            sql = """
+                SELECT
+                    id,
+                    original_filename,
+                    mime_type,
+                    file_size,
+                    uploaded_at
+                FROM uploaded_files
+                ORDER BY uploaded_at DESC
+            """
+
+            cursor.execute(sql)
+
+            return cursor.fetchall()
+
+    finally:
+        connection.close()
+
+
+def get_uploaded_file(file_id):
+    """
+    Get a single uploaded file including its binary data.
+    """
+
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+
+            sql = """
+                SELECT
+                    id,
+                    original_filename,
+                    mime_type,
+                    file_size,
+                    file_data,
+                    uploaded_at
+                FROM uploaded_files
+                WHERE id = %s
+            """
+
+            cursor.execute(
+                sql,
+                (file_id,)
+            )
+
+            return cursor.fetchone()
+
+    finally:
+        connection.close()
+
+
+def delete_uploaded_file(file_id):
+    """
+    Delete an uploaded file from the database.
+    """
+
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+
+            sql = """
+                DELETE FROM uploaded_files
+                WHERE id = %s
+            """
+
+            cursor.execute(
+                sql,
+                (file_id,)
+            )
+
+            rows_deleted = cursor.rowcount
+
+        connection.commit()
+
+        return rows_deleted > 0
+
+    finally:
+        connection.close()
+# ==========================================
+# DELETE ASSESSMENT
+# ==========================================
+
+def delete_assessment(assessment_id):
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+
+            # Check whether the assessment exists
+            cursor.execute(
+                """
+                SELECT id
+                FROM assessments
+                WHERE id = %s
+                """,
+                (assessment_id,)
+            )
+
+            assessment = cursor.fetchone()
+
+            if not assessment:
+                raise ValueError(
+                    f"Assessment with ID {assessment_id} was not found."
+                )
+
+            # Delete assessment
+            # Related findings are deleted automatically
+            # because assessment_id uses ON DELETE CASCADE.
+            cursor.execute(
+                """
+                DELETE FROM assessments
+                WHERE id = %s
+                """,
+                (assessment_id,)
+            )
+
+            deleted_rows = cursor.rowcount
+
+        connection.commit()
+
+        return deleted_rows > 0
+
+    except Exception:
+        connection.rollback()
+        raise
+
+    finally:
+        connection.close()

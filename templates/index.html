@@ -782,6 +782,32 @@
 
 
         /* =====================================================
+           CONSOLIDATED FINDING GROUPS
+        ===================================================== */
+
+        .finding-groups { display:flex; flex-direction:column; gap:10px; }
+        .finding-group { border:1px solid #34383e; border-radius:10px; overflow:hidden; background:#111214; }
+        .finding-group-summary { display:flex; align-items:center; justify-content:space-between; gap:15px; padding:15px 16px; background:#1d1f22; cursor:pointer; list-style:none; }
+        .finding-group-summary::-webkit-details-marker { display:none; }
+        .finding-group-summary::before { content:"▶"; color:#6f9cff; font-size:10px; margin-right:4px; transition:transform .2s ease; }
+        .finding-group[open] .finding-group-summary::before { transform:rotate(90deg); }
+        .finding-group-title { display:flex; align-items:center; gap:10px; flex:1; }
+        .finding-group-name { color:#fff; font-size:13px; font-weight:800; }
+        .finding-group-count { padding:4px 9px; border-radius:20px; background:rgba(95,143,255,.12); color:#6f9cff; font-size:10px; font-weight:800; }
+        .finding-group-meta { display:flex; align-items:center; gap:10px; }
+        .finding-group-body { display:flex; flex-direction:column; gap:10px; padding:10px; background:#0d0e10; }
+        .finding-group-body .finding-card { margin:0; }
+
+        /* =====================================================
+           HISTORY ACTION BUTTONS
+        ===================================================== */
+        .history-actions { display:flex; align-items:center; gap:7px; }
+        .delete-assessment-button { padding:7px 11px; border:1px solid #7f2f35; border-radius:7px; background:rgba(127,47,53,.14); color:#ff6b6b; font-size:11px; font-weight:700; cursor:pointer; }
+        .delete-assessment-button:hover { background:#8f3038; color:#fff; }
+        .delete-assessment-button:disabled { opacity:.6; cursor:not-allowed; }
+
+
+        /* =====================================================
            RESPONSIVE
         ===================================================== */
 
@@ -825,6 +851,206 @@
 
         }
 
+
+        /* =====================================================
+           NEW ASSESSMENT MODAL
+        ===================================================== */
+
+        .new-assessment-button {
+            border: none;
+            background: #2f6fed;
+            color: #ffffff;
+            padding: 11px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .new-assessment-button:hover {
+            background: #245dcc;
+        }
+
+        .assessment-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: rgba(0, 0, 0, 0.78);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .assessment-modal-overlay.active {
+            display: flex;
+        }
+
+        .assessment-modal {
+            width: min(620px, 95vw);
+            max-height: 90vh;
+            overflow-y: auto;
+            background: #111214;
+            border: 1px solid #30343b;
+            border-radius: 16px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.55);
+        }
+
+        .assessment-modal-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 20px 22px;
+            background: #1a1c1f;
+            border-bottom: 1px solid #30343b;
+        }
+
+        .assessment-modal-header h2 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 19px;
+            font-weight: 800;
+        }
+
+        .assessment-modal-header p {
+            margin: 6px 0 0;
+            color: #8ea0bd;
+            font-size: 12px;
+        }
+
+        .assessment-modal-close {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            border: 1px solid #30343b;
+            border-radius: 8px;
+            background: #202225;
+            color: #ffffff;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .assessment-tabs {
+            display: flex;
+            background: #151719;
+            border-bottom: 1px solid #30343b;
+        }
+
+        .assessment-tab {
+            flex: 1;
+            padding: 14px 12px;
+            border: none;
+            border-bottom: 2px solid transparent;
+            background: transparent;
+            color: #8ea0bd;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .assessment-tab.active {
+            color: #5f8fff;
+            border-bottom-color: #2f6fed;
+        }
+
+        .assessment-tab-content {
+            display: none;
+            padding: 22px;
+        }
+
+        .assessment-tab-content.active {
+            display: block;
+        }
+
+        .assessment-tab-content label {
+            display: block;
+            margin: 0 0 7px;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .assessment-tab-content label:not(:first-child) {
+            margin-top: 16px;
+        }
+
+        .assessment-tab-content input[type="text"],
+        .assessment-tab-content input[type="file"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            border: 1px solid #30343b;
+            border-radius: 8px;
+            background: #202225;
+            color: #ffffff;
+            font-size: 12px;
+        }
+
+        .assessment-tab-content input[type="text"]:focus {
+            outline: none;
+            border-color: #2f6fed;
+        }
+
+        .selected-file-name {
+            margin-top: 9px;
+            color: #8ea0bd;
+            font-size: 11px;
+            word-break: break-word;
+        }
+
+        .assessment-modal-message {
+            min-height: 18px;
+            margin-top: 14px;
+            font-size: 12px;
+        }
+
+        .assessment-modal-message.error {
+            color: #f87171;
+        }
+
+        .assessment-modal-message.success {
+            color: #4ade80;
+        }
+
+        .assessment-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .assessment-cancel-button,
+        .assessment-start-button {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .assessment-cancel-button {
+            border: 1px solid #30343b;
+            background: #202225;
+            color: #aeb8cc;
+        }
+
+        .assessment-start-button {
+            border: none;
+            background: #2f6fed;
+            color: #ffffff;
+        }
+
+        .assessment-start-button:hover {
+            background: #245dcc;
+        }
+
+        .assessment-start-button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
     </style>
 
 </head>
@@ -854,47 +1080,210 @@
 
 
     <!-- =====================================================
-         RUN ASSESSMENT
+         NEW ASSESSMENT
     ===================================================== -->
 
     <section class="card">
 
-        <h2>Run Assessment</h2>
+        <div class="section-heading-row">
 
-        <p class="section-description">
-            Enter the path of the project you want to assess.
-        </p>
+            <div>
 
-        <form id="assessmentForm">
+                <h2>New Assessment</h2>
 
-            <label for="projectPath">
-                Project Path
-            </label>
+                <p class="section-description">
+                    Upload a project ZIP file or provide a server local path to run an assessment.
+                </p>
 
-            <input
-                type="text"
-                id="projectPath"
-                name="project_path"
-                placeholder="Example: C:\my_project"
-                required
-            >
+            </div>
 
             <button
-                type="submit"
-                id="runButton"
+                type="button"
+                class="new-assessment-button"
+                onclick="openAssessmentModal()"
             >
-                Run Assessment
+                + New Assessment
             </button>
 
-        </form>
-
-        <div
-            id="assessmentMessage"
-            class="status-update-message"
-        ></div>
+        </div>
 
     </section>
 
+
+    <!-- =====================================================
+         NEW ASSESSMENT MODAL
+    ===================================================== -->
+
+    <div
+        id="assessmentModal"
+        class="assessment-modal-overlay"
+    >
+
+        <div class="assessment-modal">
+
+            <div class="assessment-modal-header">
+
+                <div>
+
+                    <h2>Run Production Readiness Assessment</h2>
+
+                    <p>
+                        Upload your project repository as a .zip or specify a server path.
+                    </p>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="assessment-modal-close"
+                    onclick="closeAssessmentModal()"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="assessment-tabs">
+
+                <button
+                    type="button"
+                    id="zipTabButton"
+                    class="assessment-tab active"
+                    onclick="switchAssessmentTab('zip')"
+                >
+                    Zip Archive Upload
+                </button>
+
+                <button
+                    type="button"
+                    id="pathTabButton"
+                    class="assessment-tab"
+                    onclick="switchAssessmentTab('path')"
+                >
+                    Server Local Path
+                </button>
+
+            </div>
+
+
+            <div
+                id="zipAssessmentTab"
+                class="assessment-tab-content active"
+            >
+
+                <label for="zipProjectName">
+                    Project Name (Optional)
+                </label>
+
+                <input
+                    type="text"
+                    id="zipProjectName"
+                    placeholder="Example: MyProject"
+                >
+
+                <label for="zipProjectFile">
+                    Project ZIP File
+                </label>
+
+                <input
+                    type="file"
+                    id="zipProjectFile"
+                    accept=".zip"
+                >
+
+                <div
+                    id="zipFileName"
+                    class="selected-file-name"
+                >
+                    No file selected
+                </div>
+
+                <div
+                    id="zipAssessmentMessage"
+                    class="assessment-modal-message"
+                ></div>
+
+                <div class="assessment-modal-actions">
+
+                    <button
+                        type="button"
+                        class="assessment-cancel-button"
+                        onclick="closeAssessmentModal()"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        id="zipStartButton"
+                        class="assessment-start-button"
+                        onclick="startZipAssessment()"
+                    >
+                        Start Assessment
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="pathAssessmentTab"
+                class="assessment-tab-content"
+            >
+
+                <label for="serverProjectName">
+                    Project Name (Optional)
+                </label>
+
+                <input
+                    type="text"
+                    id="serverProjectName"
+                    placeholder="Example: MyProject"
+                >
+
+                <label for="serverProjectPath">
+                    Server Local Path
+                </label>
+
+                <input
+                    type="text"
+                    id="serverProjectPath"
+                    placeholder="/home/ubuntu/projects/myproject"
+                >
+
+                <div
+                    id="pathAssessmentMessage"
+                    class="assessment-modal-message"
+                ></div>
+
+                <div class="assessment-modal-actions">
+
+                    <button
+                        type="button"
+                        class="assessment-cancel-button"
+                        onclick="closeAssessmentModal()"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        id="pathStartButton"
+                        class="assessment-start-button"
+                        onclick="startPathAssessment()"
+                    >
+                        Evaluate Path
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
 
     <!-- =====================================================
          DASHBOARD ANALYTICS
@@ -1740,147 +2129,356 @@ function getSeverityClass(severity) {
 
 
 /* =====================================================
-   RUN ASSESSMENT
+   NEW ASSESSMENT MODAL
 ===================================================== */
 
-document
-    .getElementById("assessmentForm")
-    .addEventListener(
-        "submit",
-        async function(event) {
+function openAssessmentModal() {
 
-            event.preventDefault();
+    document
+        .getElementById("assessmentModal")
+        .classList.add("active");
 
-            const projectPath =
-                document
-                    .getElementById("projectPath")
-                    .value
-                    .trim();
+    clearAssessmentMessages();
 
-            const button =
-                document.getElementById("runButton");
-
-            const message =
-                document.getElementById(
-                    "assessmentMessage"
-                );
+}
 
 
-            if (!projectPath) {
+function closeAssessmentModal() {
 
-                message.textContent =
-                    "Please enter a project path.";
+    document
+        .getElementById("assessmentModal")
+        .classList.remove("active");
 
-                message.className =
-                    "status-update-message error";
+}
+
+
+function clearAssessmentMessages() {
+
+    const zipMessage =
+        document.getElementById("zipAssessmentMessage");
+
+    const pathMessage =
+        document.getElementById("pathAssessmentMessage");
+
+    zipMessage.textContent = "";
+    zipMessage.className = "assessment-modal-message";
+
+    pathMessage.textContent = "";
+    pathMessage.className = "assessment-modal-message";
+
+}
+
+
+function switchAssessmentTab(tab) {
+
+    const zipTab =
+        document.getElementById("zipAssessmentTab");
+
+    const pathTab =
+        document.getElementById("pathAssessmentTab");
+
+    const zipButton =
+        document.getElementById("zipTabButton");
+
+    const pathButton =
+        document.getElementById("pathTabButton");
+
+    if (tab === "zip") {
+
+        zipTab.classList.add("active");
+        pathTab.classList.remove("active");
+
+        zipButton.classList.add("active");
+        pathButton.classList.remove("active");
+
+    } else {
+
+        pathTab.classList.add("active");
+        zipTab.classList.remove("active");
+
+        pathButton.classList.add("active");
+        zipButton.classList.remove("active");
+
+    }
+
+}
+
+
+/* =====================================================
+   ZIP FILE SELECTION
+===================================================== */
+
+const zipProjectFile =
+    document.getElementById("zipProjectFile");
+
+if (zipProjectFile) {
+
+    zipProjectFile.addEventListener(
+        "change",
+        function() {
+
+            const file = this.files[0];
+
+            const display =
+                document.getElementById("zipFileName");
+
+            if (!file) {
+
+                display.textContent =
+                    "No file selected";
 
                 return;
 
             }
 
+            if (!file.name.toLowerCase().endsWith(".zip")) {
 
-            button.disabled = true;
+                display.textContent =
+                    "Please select a ZIP file.";
 
-            button.textContent =
-                "Running Assessment...";
+                this.value = "";
 
-            message.textContent =
-                "Assessment is running...";
-
-            message.className =
-                "status-update-message";
-
-
-            try {
-
-                const response =
-                    await fetch(
-                        "/api/assessments",
-                        {
-                            method: "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body: JSON.stringify({
-                                project_path:
-                                    projectPath
-                            })
-                        }
-                    );
-
-
-                const data =
-                    await response.json();
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        data.message ||
-                        "Assessment failed."
-                    );
-
-                }
-
-
-                if (
-                    data.status !== "success" ||
-                    !data.assessment
-                ) {
-
-                    throw new Error(
-                        data.message ||
-                        "Invalid assessment response."
-                    );
-
-                }
-
-
-                displayAssessment(
-                    data.assessment
-                );
-
-
-                message.textContent =
-                    "Assessment completed successfully.";
-
-                message.className =
-                    "status-update-message success";
-
-
-                await loadHistory();
-
-                await loadAnalytics();
-
-                await loadExceptions();
+                return;
 
             }
-            catch (error) {
 
-                console.error(error);
-
-                message.textContent =
-                    error.message ||
-                    "An error occurred.";
-
-                message.className =
-                    "status-update-message error";
-
-            }
-            finally {
-
-                button.disabled = false;
-
-                button.textContent =
-                    "Run Assessment";
-
-            }
+            display.textContent =
+                "Selected: " + file.name;
 
         }
     );
+
+}
+
+
+/* =====================================================
+   ZIP ASSESSMENT
+===================================================== */
+
+async function startZipAssessment() {
+
+    const file =
+        document.getElementById("zipProjectFile").files[0];
+
+    const projectName =
+        document
+            .getElementById("zipProjectName")
+            .value
+            .trim();
+
+    const button =
+        document.getElementById("zipStartButton");
+
+    const message =
+        document.getElementById("zipAssessmentMessage");
+
+    if (!file) {
+
+        message.textContent =
+            "Please select a ZIP file.";
+
+        message.className =
+            "assessment-modal-message error";
+
+        return;
+
+    }
+
+    if (!file.name.toLowerCase().endsWith(".zip")) {
+
+        message.textContent =
+            "Only ZIP files are allowed.";
+
+        message.className =
+            "assessment-modal-message error";
+
+        return;
+
+    }
+
+    button.disabled = true;
+    button.textContent = "Uploading & Assessing...";
+
+    message.textContent =
+        "Uploading project and running assessment...";
+
+    message.className =
+        "assessment-modal-message";
+
+    try {
+
+        const formData = new FormData();
+
+        formData.append("file", file);
+        formData.append("project_name", projectName);
+
+        const response =
+            await fetch("/api/assessments/upload", {
+                method: "POST",
+                body: formData
+            });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "ZIP assessment failed."
+            );
+
+        }
+
+        if (
+            data.status !== "success" ||
+            !data.assessment
+        ) {
+
+            throw new Error(
+                data.message ||
+                "Invalid assessment response."
+            );
+
+        }
+
+        closeAssessmentModal();
+
+        displayAssessment(data.assessment);
+
+        await loadHistory();
+        await loadAnalytics();
+        await loadExceptions();
+
+    } catch (error) {
+
+        console.error(error);
+
+        message.textContent =
+            error.message ||
+            "An error occurred.";
+
+        message.className =
+            "assessment-modal-message error";
+
+    } finally {
+
+        button.disabled = false;
+        button.textContent = "Start Assessment";
+
+    }
+
+}
+
+
+/* =====================================================
+   SERVER LOCAL PATH ASSESSMENT
+===================================================== */
+
+async function startPathAssessment() {
+
+    const projectPath =
+        document
+            .getElementById("serverProjectPath")
+            .value
+            .trim();
+
+    const projectName =
+        document
+            .getElementById("serverProjectName")
+            .value
+            .trim();
+
+    const button =
+        document.getElementById("pathStartButton");
+
+    const message =
+        document.getElementById("pathAssessmentMessage");
+
+    if (!projectPath) {
+
+        message.textContent =
+            "Please enter a server project path.";
+
+        message.className =
+            "assessment-modal-message error";
+
+        return;
+
+    }
+
+    button.disabled = true;
+    button.textContent = "Assessing...";
+
+    message.textContent =
+        "Assessment is running...";
+
+    message.className =
+        "assessment-modal-message";
+
+    try {
+
+        const response =
+            await fetch("/api/assessments", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    project_path: projectPath,
+                    project_name: projectName
+                })
+            });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Assessment failed."
+            );
+
+        }
+
+        if (
+            data.status !== "success" ||
+            !data.assessment
+        ) {
+
+            throw new Error(
+                data.message ||
+                "Invalid assessment response."
+            );
+
+        }
+
+        closeAssessmentModal();
+
+        displayAssessment(data.assessment);
+
+        await loadHistory();
+        await loadAnalytics();
+        await loadExceptions();
+
+    } catch (error) {
+
+        console.error(error);
+
+        message.textContent =
+            error.message ||
+            "An error occurred.";
+
+        message.className =
+            "assessment-modal-message error";
+
+    } finally {
+
+        button.disabled = false;
+        button.textContent = "Evaluate Path";
+
+    }
+
+}
 
 
 /* =====================================================
@@ -2023,37 +2621,111 @@ async function loadFindings(assessmentId) {
 
 
 /* =====================================================
+   FINDING GROUPING
+===================================================== */
+
+function getFindingGroupName(finding) {
+    const ruleId = String(finding.rule_id || "").trim().toUpperCase();
+    if (ruleId.startsWith("SEC-")) return "Security";
+    if (ruleId.startsWith("BDR-")) return "Backup & Recovery";
+    if (ruleId.startsWith("MON-")) return "Monitoring";
+    if (ruleId.startsWith("SCA-")) return "Scalability & Performance";
+    if (ruleId.startsWith("OPS-")) return "Operations";
+    const category = String(finding.category || "").trim();
+    return category || "Other";
+}
+
+function getSeverityRank(severity) {
+    const normalized = String(severity || "Low").toLowerCase();
+    if (normalized === "critical") return 4;
+    if (normalized === "high") return 3;
+    if (normalized === "medium") return 2;
+    return 1;
+}
+
+function groupFindings(findings) {
+    const groups = new Map();
+    findings.forEach(finding => {
+        const groupName = getFindingGroupName(finding);
+        if (!groups.has(groupName)) groups.set(groupName, { name:groupName, findings:[] });
+        groups.get(groupName).findings.push(finding);
+    });
+    const groupOrder = ["Security","Backup & Recovery","Monitoring","Scalability & Performance","Operations","Other"];
+    return Array.from(groups.values()).sort((a,b) => {
+        const ai=groupOrder.indexOf(a.name), bi=groupOrder.indexOf(b.name);
+        return (ai===-1?999:ai)-(bi===-1?999:bi);
+    });
+}
+
+function getGroupHighestSeverity(findings) {
+    if (!findings.length) return "Low";
+    return findings.slice().sort((a,b)=>getSeverityRank(b.severity)-getSeverityRank(a.severity))[0].severity || "Low";
+}
+
+function renderFindingGroupsHtml(findings, showStatusControl) {
+    if (!findings.length) {
+        return `<div class="loading-message">No findings were detected.</div>`;
+    }
+    const groups = groupFindings(findings);
+    return `
+        <div class="finding-groups">
+            ${groups.map(group => {
+                const highestSeverity = getGroupHighestSeverity(group.findings);
+                const severityClass = getSeverityClass(highestSeverity);
+                const openCount = group.findings.filter(f => String(f.status || "Open").toLowerCase() === "open").length;
+                return `
+                    <details class="finding-group">
+                        <summary class="finding-group-summary">
+                            <div class="finding-group-title">
+                                <span class="finding-group-name">${escapeHtml(group.name)}</span>
+                                <span class="finding-group-count">${group.findings.length} ${group.findings.length === 1 ? "issue" : "issues"}</span>
+                            </div>
+                            <div class="finding-group-meta">
+                                ${openCount > 0 ? `<span class="finding-group-count">${openCount} Open</span>` : ""}
+                                <span class="severity-badge ${severityClass}">${escapeHtml(highestSeverity)}</span>
+                            </div>
+                        </summary>
+                        <div class="finding-group-body">
+                            ${group.findings.slice().sort((a,b)=>getSeverityRank(b.severity)-getSeverityRank(a.severity)).map(finding=>createFindingHtml(finding,showStatusControl)).join("")}
+                        </div>
+                    </details>
+                `;
+            }).join("")}
+        </div>
+    `;
+}
+
+
+/* =====================================================
+   LOAD FINDINGS
+===================================================== */
+
+async function loadFindings(assessmentId) {
+    const container = document.getElementById("findingsContainer");
+    container.innerHTML = `<div class="loading-message">Loading findings...</div>`;
+    try {
+        const response = await fetch(`/api/assessments/${assessmentId}/findings`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Unable to load findings.");
+        const findings = data.findings || [];
+        document.getElementById("findingCount").textContent = findings.length;
+        renderFindings(findings,container);
+    } catch (error) {
+        container.innerHTML = `<div class="error-message">${escapeHtml(error.message)}</div>`;
+    }
+}
+
+
+/* =====================================================
    RENDER FINDINGS
 ===================================================== */
 
-function renderFindings(
-    findings,
-    container
-) {
-
+function renderFindings(findings,container) {
     if (!findings.length) {
-
-        container.innerHTML =
-            `<div class="loading-message">
-                No findings were detected.
-            </div>`;
-
+        container.innerHTML = `<div class="loading-message">No findings were detected.</div>`;
         return;
-
     }
-
-
-    container.innerHTML =
-        findings
-            .map(
-                finding =>
-                    createFindingHtml(
-                        finding,
-                        true
-                    )
-            )
-            .join("");
-
+    container.innerHTML = renderFindingGroupsHtml(findings,true);
 }
 
 
@@ -2788,15 +3460,28 @@ function renderHistory(
 
                             <td>
 
-                                <button
-                                    type="button"
-                                    class="view-details-button"
-                                    onclick="openAssessmentDetails(
-                                        ${assessment.id}
-                                    )"
-                                >
-                                    View Details
-                                </button>
+                                <div class="history-actions">
+                                    <button
+                                        type="button"
+                                        class="view-details-button"
+                                        onclick="openAssessmentDetails(
+                                            ${assessment.id}
+                                        )"
+                                    >
+                                        View Details
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="delete-assessment-button"
+                                        onclick="deleteAssessment(
+                                            ${assessment.id},
+                                            this
+                                        )"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
 
                             </td>
 
@@ -2807,6 +3492,36 @@ function renderHistory(
             )
             .join("");
 
+}
+
+
+/* =====================================================
+   DELETE ASSESSMENT
+===================================================== */
+
+async function deleteAssessment(assessmentId,button) {
+    const confirmed = confirm(
+        `Are you sure you want to delete Assessment #${assessmentId}?\n\nThis will permanently remove the assessment and its findings from the history.`
+    );
+    if (!confirmed) return;
+    button.disabled = true;
+    button.textContent = "Deleting...";
+    try {
+        const response = await fetch(`/api/assessments/${assessmentId}`, { method:"DELETE" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Failed to delete assessment.");
+        if (Number(currentAssessmentId) === Number(assessmentId)) closeDetailsModal();
+        await loadHistory();
+        await loadAnalytics();
+        await loadLatestAssessment();
+        await loadExceptions();
+        alert("Assessment deleted successfully.");
+    } catch (error) {
+        console.error("Delete assessment error:",error);
+        alert(error.message || "Unable to delete assessment.");
+        button.disabled = false;
+        button.textContent = "Delete";
+    }
 }
 
 
@@ -3110,7 +3825,7 @@ async function openAssessmentDetails(
                 Findings
 
                 <span class="finding-count">
-                    ${findings.length}
+                    ${groupFindings(findings).length}
                 </span>
 
             </div>
@@ -3120,15 +3835,10 @@ async function openAssessmentDetails(
 
                 ${
                     findings.length
-                        ? findings
-                            .map(
-                                finding =>
-                                    createFindingHtml(
-                                        finding,
-                                        false
-                                    )
-                            )
-                            .join("")
+                        ? renderFindingGroupsHtml(
+                            findings,
+                            false
+                        )
                         : `
                             <div class="loading-message">
                                 No findings for this assessment.
