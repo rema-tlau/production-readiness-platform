@@ -1,27 +1,20 @@
-from flask import Flask, jsonify, request, render_template, Response
-
+from flask import Flask, jsonify, request, render_template
 from werkzeug.utils import secure_filename
 
 import os
 import tempfile
 import zipfile
 
-
 from database import (
+    get_connection,
     test_connection,
     get_assessments,
+    get_assessment,
     get_findings,
     get_finding,
     update_finding_status,
-    get_dashboard_analytics,
-    save_uploaded_file,
-    get_uploaded_files,
-    get_uploaded_file,
-    delete_uploaded_file,
-    delete_assessment
+    get_dashboard_analytics
 )
-
-from config import Config
 
 from assessment import AssessmentEngine
 
@@ -36,45 +29,58 @@ from exceptions import (
     get_finding_exceptions
 )
 
+from config import Config
+
+
+# ============================================================
+# FLASK APPLICATION
+# ============================================================
 
 app = Flask(__name__)
 
+# Maximum ZIP upload size: 50 MB
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
 
-# ==========================================
+# ============================================================
+# ERROR HANDLER - FILE TOO LARGE
+# ============================================================
+
+@app.errorhandler(413)
+def file_too_large(error):
+    return jsonify({
+        "status": "error",
+        "message": "Uploaded file is too large. Maximum allowed size is 50 MB."
+    }), 413
+
+
+# ============================================================
 # HOME / DASHBOARD
-# ==========================================
+# ============================================================
 
 @app.route("/")
 def home():
-
-    return render_template(
-        "index.html"
-    )
+    return render_template("index.html")
 
 
-# ==========================================
+# ============================================================
 # HEALTH CHECK
-# ==========================================
+# ============================================================
 
-@app.route("/health")
+@app.route("/health", methods=["GET"])
 def health():
 
     return jsonify({
         "status": "healthy",
-        "message": (
-            "Production Readiness Assessment "
-            "Platform is running"
-        )
+        "message": "Production Readiness Assessment Platform is running"
     })
 
 
-# ==========================================
+# ============================================================
 # DATABASE TEST
-# ==========================================
+# ============================================================
 
-@app.route("/database-test")
+@app.route("/database-test", methods=["GET"])
 def database_test():
 
     try:
@@ -94,19 +100,16 @@ def database_test():
         }), 500
 
 
-# ==========================================
+# ============================================================
 # RUN ASSESSMENT - SERVER LOCAL PATH
-# ==========================================
+# ============================================================
 
-@app.route(
-    "/api/assessments",
-    methods=["POST"]
-)
+@app.route("/api/assessments", methods=["POST"])
 def run_assessment():
 
     try:
 
-        data = request.get_json()
+        data = request.get_json(silent=True)
 
         if not data:
 
@@ -115,9 +118,7 @@ def run_assessment():
                 "message": "Request body is required."
             }), 400
 
-        project_path = data.get(
-            "project_path"
-        )
+        project_path = data.get("project_path")
 
         if not project_path:
 
@@ -126,23 +127,35 @@ def run_assessment():
                 "message": "project_path is required."
             }), 400
 
+        # Check that the project exists
+        if not os.path.exists(project_path):
+
+            return jsonify({
+                "status": "error",
+                "message": f"Project path does not exist: {project_path}"
+            }), 400
+
         # Create assessment engine
-        engine = AssessmentEngine(
-            project_path
-        )
+        engine = AssessmentEngine(project_path)
 
         # Run assessment
-        # AssessmentEngine already saves:
+        #
+        # IMPORTANT:
+        # AssessmentEngine.run() already saves:
         # 1. Assessment
         # 2. Findings
+        #
         result = engine.run()
 
         return jsonify({
             "status": "success",
+            "message": "Assessment completed successfully.",
             "assessment": result
         })
 
     except Exception as e:
+
+        print("Assessment error:", e)
 
         return jsonify({
             "status": "error",
@@ -150,17 +163,18 @@ def run_assessment():
         }), 500
 
 
-# ==========================================
+# ============================================================
 # ZIP UPLOAD + RUN ASSESSMENT
-# ==========================================
+# ============================================================
 
-@app.route(
-    "/api/assessments/upload",
-    methods=["POST"]
-)
+@app.route("/api/assessments/upload", methods=["POST"])
 def upload_and_run_assessment():
 
     try:
+
+        # ------------------------------------------------------
+        # Check uploaded file
+        # ------------------------------------------------------
 
         if "file" not in request.files:
 
@@ -172,9 +186,7 @@ def upload_and_run_assessment():
         file = request.files["file"]
 
         project_name = (
-            request.form.get(
-                "project_name"
-            ) or ""
+            request.form.get("project_name") or ""
         ).strip()
 
         if not file or not file.filename:
@@ -184,22 +196,45 @@ def upload_and_run_assessment():
                 "message": "No ZIP file was selected."
             }), 400
 
-        filename = secure_filename(
-            file.filename
-        )
+        # ------------------------------------------------------
+        # Secure filename
+        # ------------------------------------------------------
+
+        filename = secure_filename(file.filename)
+
+        if not filename:
+
+            return jsonify({
+                "status": "error",
+                "message": "Invalid filename."
+            }), 400
+
+        # ------------------------------------------------------
+        # Only ZIP files
+        # ------------------------------------------------------
 
         if not filename.lower().endswith(".zip"):
 
             return jsonify({
                 "status": "error",
-                "message": (
-                    "Only .zip project files "
-                    "are allowed."
-                )
+                "message": "Only .zip project files are allowed."
             }), 400
 
-        # Keep the ZIP temporarily.
-        # The archive itself is not stored in MySQL.
+        # ------------------------------------------------------
+        # Default project name
+        # ------------------------------------------------------
+
+        if not project_name:
+
+            project_name = os.path.splitext(filename)[0]
+
+        # ------------------------------------------------------
+        # Temporary directory
+        #
+        # The uploaded ZIP is NOT permanently stored.
+        # It is extracted, assessed and then deleted.
+        # ------------------------------------------------------
+
         with tempfile.TemporaryDirectory(
             prefix="prap_upload_"
         ) as temp_dir:
@@ -211,6 +246,10 @@ def upload_and_run_assessment():
 
             file.save(zip_path)
 
+            # --------------------------------------------------
+            # Extract directory
+            # --------------------------------------------------
+
             extract_dir = os.path.join(
                 temp_dir,
                 "project"
@@ -221,9 +260,9 @@ def upload_and_run_assessment():
                 exist_ok=True
             )
 
-            # ==========================================
+            # --------------------------------------------------
             # SAFE ZIP EXTRACTION
-            # ==========================================
+            # --------------------------------------------------
 
             with zipfile.ZipFile(
                 zip_path,
@@ -245,6 +284,7 @@ def upload_and_run_assessment():
                         )
                     )
 
+                    # Prevent ZIP path traversal
                     if not member_path.startswith(
                         extract_root
                     ):
@@ -261,9 +301,21 @@ def upload_and_run_assessment():
                     extract_dir
                 )
 
-            # ==========================================
-            # FIND PROJECT DIRECTORY
-            # ==========================================
+            # --------------------------------------------------
+            # FIND ACTUAL PROJECT DIRECTORY
+            #
+            # Supports:
+            #
+            # project.zip
+            #   └── project/
+            #
+            # and:
+            #
+            # project.zip
+            #   ├── app.py
+            #   ├── requirements.txt
+            #   └── ...
+            # --------------------------------------------------
 
             entries = [
                 os.path.join(
@@ -298,45 +350,122 @@ def upload_and_run_assessment():
 
                 project_path = extract_dir
 
-            if not project_name:
+            # --------------------------------------------------
+            # VERIFY PROJECT DIRECTORY
+            # --------------------------------------------------
 
-                project_name = os.path.splitext(
-                    filename
-                )[0]
+            if not os.path.exists(project_path):
 
-            # ==========================================
+                return jsonify({
+                    "status": "error",
+                    "message": "Extracted project directory was not found."
+                }), 400
+
+            # --------------------------------------------------
             # RUN ASSESSMENT
-            # ==========================================
+            # --------------------------------------------------
 
             engine = AssessmentEngine(
                 project_path
             )
 
             # IMPORTANT:
-            # AssessmentEngine.run() already saves
-            # the assessment and findings to MySQL.
+            #
+            # AssessmentEngine.run()
+            # automatically saves:
+            #
+            # assessments
+            # findings
+            #
             result = engine.run()
 
-            if isinstance(
-                result,
-                dict
-            ):
+            # --------------------------------------------------
+            # Make sure response uses uploaded project name
+            # --------------------------------------------------
 
-                result.setdefault(
-                    "project_name",
+            assessment_id = None
+
+            if isinstance(result, dict):
+
+                assessment_id = result.get(
+                    "assessment_id"
+                )
+
+                result["project_name"] = (
                     project_name
                 )
 
+                result["uploaded_filename"] = (
+                    filename
+                )
+
+            # --------------------------------------------------
+            # Update saved assessment name
+            #
+            # AssessmentEngine initially sees the temporary
+            # extraction directory. Therefore we update the
+            # database record to the real project name.
+            # --------------------------------------------------
+
+            if assessment_id:
+
+                try:
+
+                    connection = get_connection()
+
+                    try:
+
+                        with connection.cursor() as cursor:
+
+                            cursor.execute(
+                                """
+                                UPDATE assessments
+                                SET
+                                    project_name = %s,
+                                    project_path = %s
+                                WHERE id = %s
+                                """,
+                                (
+                                    project_name,
+                                    f"uploaded_zip://{filename}",
+                                    assessment_id
+                                )
+                            )
+
+                        connection.commit()
+
+                    finally:
+
+                        connection.close()
+
+                except Exception as db_error:
+
+                    print(
+                        "Warning: could not update "
+                        "uploaded project name:",
+                        db_error
+                    )
+
+            # --------------------------------------------------
+            # SUCCESS RESPONSE
+            # --------------------------------------------------
+
             return jsonify({
+
                 "status": "success",
+
                 "message": (
                     "ZIP uploaded and assessment "
                     "completed successfully."
                 ),
+
                 "assessment": result,
+
                 "filename": filename,
+
                 "project_name": project_name
-            })
+
+            }), 200
 
     except zipfile.BadZipFile:
 
@@ -350,15 +479,20 @@ def upload_and_run_assessment():
 
     except Exception as e:
 
+        print(
+            "ZIP assessment error:",
+            e
+        )
+
         return jsonify({
             "status": "error",
             "message": str(e)
         }), 500
 
 
-# ==========================================
+# ============================================================
 # GET ASSESSMENT HISTORY
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/assessments",
@@ -377,52 +511,121 @@ def get_assessment_history():
 
     except Exception as e:
 
+        print(
+            "Assessment history error:",
+            e
+        )
+
         return jsonify({
             "status": "error",
             "message": str(e)
         }), 500
 
 
-# ==========================================
+# ============================================================
 # DELETE ASSESSMENT
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/assessments/<int:assessment_id>",
     methods=["DELETE"]
 )
-def remove_assessment(
-    assessment_id
-):
+def remove_assessment(assessment_id):
+
+    connection = None
 
     try:
 
-        deleted = delete_assessment(
-            assessment_id
-        )
+        connection = get_connection()
 
-        if not deleted:
+        with connection.cursor() as cursor:
+
+            # ------------------------------------------------
+            # Check assessment exists
+            # ------------------------------------------------
+
+            cursor.execute(
+                """
+                SELECT id
+                FROM assessments
+                WHERE id = %s
+                """,
+                (assessment_id,)
+            )
+
+            assessment = cursor.fetchone()
+
+            if not assessment:
+
+                return jsonify({
+                    "status": "error",
+                    "message": "Assessment not found."
+                }), 404
+
+            # ------------------------------------------------
+            # Delete exceptions belonging to findings
+            # of this assessment.
+            #
+            # This prevents foreign-key problems.
+            # ------------------------------------------------
+
+            cursor.execute(
+                """
+                DELETE FROM exceptions
+                WHERE finding_id IN (
+                    SELECT id
+                    FROM findings
+                    WHERE assessment_id = %s
+                )
+                """,
+                (assessment_id,)
+            )
+
+            # ------------------------------------------------
+            # Delete findings
+            # ------------------------------------------------
+
+            cursor.execute(
+                """
+                DELETE FROM findings
+                WHERE assessment_id = %s
+                """,
+                (assessment_id,)
+            )
+
+            # ------------------------------------------------
+            # Delete assessment
+            # ------------------------------------------------
+
+            cursor.execute(
+                """
+                DELETE FROM assessments
+                WHERE id = %s
+                """,
+                (assessment_id,)
+            )
+
+            deleted_rows = cursor.rowcount
+
+        connection.commit()
+
+        if deleted_rows == 0:
 
             return jsonify({
                 "status": "error",
-                "message": "Assessment not found."
+                "message": "Assessment was not deleted."
             }), 404
 
         return jsonify({
             "status": "success",
-            "message": (
-                "Assessment deleted successfully."
-            )
+            "message": "Assessment deleted successfully."
         }), 200
 
-    except ValueError as e:
-
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 404
-
     except Exception as e:
+
+        if connection:
+
+            connection.rollback()
 
         print(
             "Delete assessment error:",
@@ -434,22 +637,28 @@ def remove_assessment(
             "message": str(e)
         }), 500
 
+    finally:
 
-# ==========================================
+        if connection:
+
+            connection.close()
+
+
+# ============================================================
 # GET SINGLE ASSESSMENT
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/assessments/<int:assessment_id>",
     methods=["GET"]
 )
-def get_single_assessment(
-    assessment_id
-):
+def get_single_assessment(assessment_id):
 
     try:
 
-        assessment = get_assessments(
+        # IMPORTANT:
+        # Use get_assessment(), NOT get_assessments(id)
+        assessment = get_assessment(
             assessment_id
         )
 
@@ -467,23 +676,26 @@ def get_single_assessment(
 
     except Exception as e:
 
+        print(
+            "Single assessment error:",
+            e
+        )
+
         return jsonify({
             "status": "error",
             "message": str(e)
         }), 500
 
 
-# ==========================================
+# ============================================================
 # GET FINDINGS FOR AN ASSESSMENT
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/assessments/<int:assessment_id>/findings",
     methods=["GET"]
 )
-def get_assessment_findings(
-    assessment_id
-):
+def get_assessment_findings(assessment_id):
 
     try:
 
@@ -498,23 +710,26 @@ def get_assessment_findings(
 
     except Exception as e:
 
+        print(
+            "Assessment findings error:",
+            e
+        )
+
         return jsonify({
             "status": "error",
             "message": str(e)
         }), 500
 
 
-# ==========================================
+# ============================================================
 # GET SINGLE FINDING
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/findings/<int:finding_id>",
     methods=["GET"]
 )
-def get_single_finding(
-    finding_id
-):
+def get_single_finding(finding_id):
 
     try:
 
@@ -542,29 +757,27 @@ def get_single_finding(
         }), 500
 
 
-# ==========================================
+# ============================================================
 # UPDATE FINDING STATUS
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/findings/<int:finding_id>/status",
     methods=["PUT"]
 )
-def change_finding_status(
-    finding_id
-):
+def change_finding_status(finding_id):
 
     try:
 
-        data = request.get_json()
+        data = request.get_json(
+            silent=True
+        )
 
         if not data:
 
             return jsonify({
                 "status": "error",
-                "message": (
-                    "Request body is required."
-                )
+                "message": "Request body is required."
             }), 400
 
         new_status = data.get(
@@ -611,9 +824,9 @@ def change_finding_status(
         }), 500
 
 
-# ==========================================
+# ============================================================
 # GET DASHBOARD ANALYTICS
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/dashboard/analytics",
@@ -640,14 +853,14 @@ def dashboard_analytics():
         }), 500
 
 
-# ==========================================
+# ============================================================
 # RISK EXCEPTION MANAGEMENT
-# ==========================================
+# ============================================================
 
 
-# ==========================================
+# ============================================================
 # REQUEST RISK EXCEPTION
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/exceptions",
@@ -657,15 +870,15 @@ def create_exception():
 
     try:
 
-        data = request.get_json()
+        data = request.get_json(
+            silent=True
+        )
 
         if not data:
 
             return jsonify({
                 "status": "error",
-                "message": (
-                    "Request body is required."
-                )
+                "message": "Request body is required."
             }), 400
 
         finding_id = data.get(
@@ -692,36 +905,28 @@ def create_exception():
 
             return jsonify({
                 "status": "error",
-                "message": (
-                    "finding_id is required."
-                )
+                "message": "finding_id is required."
             }), 400
 
         if not reason:
 
             return jsonify({
                 "status": "error",
-                "message": (
-                    "reason is required."
-                )
+                "message": "reason is required."
             }), 400
 
         if not owner:
 
             return jsonify({
                 "status": "error",
-                "message": (
-                    "owner is required."
-                )
+                "message": "owner is required."
             }), 400
 
         if not expiry_date:
 
             return jsonify({
                 "status": "error",
-                "message": (
-                    "expiry_date is required."
-                )
+                "message": "expiry_date is required."
             }), 400
 
         exception_id = request_exception(
@@ -760,9 +965,9 @@ def create_exception():
         }), 500
 
 
-# ==========================================
+# ============================================================
 # GET ALL RISK EXCEPTIONS
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/exceptions",
@@ -789,17 +994,15 @@ def list_exceptions():
         }), 500
 
 
-# ==========================================
+# ============================================================
 # GET SINGLE RISK EXCEPTION
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/exceptions/<int:exception_id>",
     methods=["GET"]
 )
-def get_single_exception(
-    exception_id
-):
+def get_single_exception(exception_id):
 
     try:
 
@@ -813,9 +1016,7 @@ def get_single_exception(
 
             return jsonify({
                 "status": "error",
-                "message": (
-                    "Risk exception not found."
-                )
+                "message": "Risk exception not found."
             }), 404
 
         return jsonify({
@@ -831,17 +1032,15 @@ def get_single_exception(
         }), 500
 
 
-# ==========================================
+# ============================================================
 # APPROVE RISK EXCEPTION
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/exceptions/<int:exception_id>/approve",
     methods=["POST"]
 )
-def approve_risk_exception(
-    exception_id
-):
+def approve_risk_exception(exception_id):
 
     try:
 
@@ -886,17 +1085,15 @@ def approve_risk_exception(
         }), 500
 
 
-# ==========================================
+# ============================================================
 # REJECT RISK EXCEPTION
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/exceptions/<int:exception_id>/reject",
     methods=["POST"]
 )
-def reject_risk_exception(
-    exception_id
-):
+def reject_risk_exception(exception_id):
 
     try:
 
@@ -941,9 +1138,9 @@ def reject_risk_exception(
         }), 500
 
 
-# ==========================================
+# ============================================================
 # GET ACTIVE RISK EXCEPTIONS
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/exceptions/active",
@@ -972,17 +1169,15 @@ def list_active_exceptions():
         }), 500
 
 
-# ==========================================
+# ============================================================
 # GET EXCEPTIONS FOR A FINDING
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/exceptions/finding/<int:finding_id>",
     methods=["GET"]
 )
-def list_finding_exceptions(
-    finding_id
-):
+def list_finding_exceptions(finding_id):
 
     try:
 
@@ -1008,9 +1203,9 @@ def list_finding_exceptions(
         }), 500
 
 
-# ==========================================
+# ============================================================
 # CHECK EXPIRED EXCEPTIONS
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/exceptions/check-expired",
@@ -1041,194 +1236,9 @@ def update_expired_exceptions():
         }), 500
 
 
-# ==========================================
-# FILE UPLOAD
-# ==========================================
-
-@app.route(
-    "/api/files/upload",
-    methods=["POST"]
-)
-def upload_file():
-
-    try:
-
-        if "file" not in request.files:
-
-            return jsonify({
-                "status": "error",
-                "message": "No file was selected."
-            }), 400
-
-        file = request.files["file"]
-
-        if file.filename == "":
-
-            return jsonify({
-                "status": "error",
-                "message": "No file was selected."
-            }), 400
-
-        # Read file data
-        file_data = file.read()
-
-        # File information
-        original_filename = (
-            file.filename
-        )
-
-        mime_type = (
-            file.mimetype
-            or "application/octet-stream"
-        )
-
-        file_size = len(
-            file_data
-        )
-
-        # Save file to MySQL
-        file_id = save_uploaded_file(
-            original_filename=original_filename,
-            mime_type=mime_type,
-            file_size=file_size,
-            file_data=file_data
-        )
-
-        return jsonify({
-            "status": "success",
-            "message": (
-                "File uploaded successfully."
-            ),
-            "file_id": file_id,
-            "filename": original_filename,
-            "file_size": file_size
-        }), 201
-
-    except Exception as e:
-
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
-
-
-# ==========================================
-# GET UPLOADED FILES
-# ==========================================
-
-@app.route(
-    "/api/files",
-    methods=["GET"]
-)
-def list_uploaded_files():
-
-    try:
-
-        files = get_uploaded_files()
-
-        return jsonify({
-            "status": "success",
-            "files": files
-        })
-
-    except Exception as e:
-
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
-
-
-# ==========================================
-# DOWNLOAD / ACCESS UPLOADED FILE
-# ==========================================
-
-@app.route(
-    "/api/files/<int:file_id>",
-    methods=["GET"]
-)
-def download_uploaded_file(
-    file_id
-):
-
-    try:
-
-        file_record = get_uploaded_file(
-            file_id
-        )
-
-        if not file_record:
-
-            return jsonify({
-                "status": "error",
-                "message": "File not found."
-            }), 404
-
-        return Response(
-            file_record["file_data"],
-            mimetype=file_record["mime_type"],
-            headers={
-                "Content-Disposition": (
-                    'attachment; filename="'
-                    + file_record[
-                        "original_filename"
-                    ]
-                    + '"'
-                )
-            }
-        )
-
-    except Exception as e:
-
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
-
-
-# ==========================================
-# DELETE UPLOADED FILE
-# ==========================================
-
-@app.route(
-    "/api/files/<int:file_id>",
-    methods=["DELETE"]
-)
-def remove_uploaded_file(
-    file_id
-):
-
-    try:
-
-        deleted = delete_uploaded_file(
-            file_id
-        )
-
-        if not deleted:
-
-            return jsonify({
-                "status": "error",
-                "message": "File not found."
-            }), 404
-
-        return jsonify({
-            "status": "success",
-            "message": (
-                "File deleted successfully."
-            )
-        })
-
-    except Exception as e:
-
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
-
-
-# ==========================================
+# ============================================================
 # APPLICATION START
-# ==========================================
+# ============================================================
 
 if __name__ == "__main__":
 
